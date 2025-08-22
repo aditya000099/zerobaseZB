@@ -5,7 +5,7 @@ Official JavaScript/TypeScript SDK for ZeroBase Backend as a Service.
 ## Installation
 
 ```bash
-npm install @zerobase/sdk
+npm install zerobase
 ```
 
 ## Quick Start
@@ -15,6 +15,7 @@ import { ZeroBaseClient, DatabaseClient, AuthClient } from "zerobase";
 
 const client = new ZeroBaseClient({
   projectId: "your-project-id",
+  url: "zerobase-url"
   apiKey: "your-api-key",
 });
 

@@ -9,322 +9,248 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ZeroBaseError = exports.AccountClient = exports.StorageClient = exports.AuthClient = exports.DatabaseClient = exports.ZeroBaseClient = void 0;
-/**
- * Main SDK Client
- * Handles configuration and base functionality
- */
+exports.AccountClient = exports.StorageClient = exports.AuthClient = exports.DatabaseClient = exports.ZeroBaseClient = void 0;
+// SDK Client
 class ZeroBaseClient {
-    constructor(config) {
-        if (!config.projectId || !config.apiKey) {
-            throw new Error("Project ID and API Key are required");
-        }
-        this.projectId = config.projectId;
-        this.apiKey = config.apiKey;
-        this.url = config.url || "http://localhost:3000";
+    constructor(projectId, url, apiKey) {
+        if (!projectId || !url || !apiKey)
+            throw new Error("Project ID, URL, and API Key are required");
+        this.projectId = projectId;
+        this.url = url;
+        this.apiKey = apiKey;
     }
-    getProjectId() { return this.projectId; }
-    getApiKey() { return this.apiKey; }
-    getUrl() { return this.url; }
 }
 exports.ZeroBaseClient = ZeroBaseClient;
-/**
- * Database Client
- * Handles all database operations including tables and documents
- */
+//
+//
+//
+// Database Client
+//
+//
+//
+//
 class DatabaseClient {
     constructor(client) {
         if (!(client instanceof ZeroBaseClient))
             throw new Error("Invalid SDK Client");
         this.client = client;
     }
-    // Table Operations
     getTables() {
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield fetch(`${this.client.getUrl()}/api/db/tables?projectId=${this.client.getProjectId()}`, {
+            return fetch(`${this.client.url}/api/db/tables?projectId=${this.client.projectId}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-API-Key": this.client.getApiKey(),
+                    "X-API-Key": this.client.apiKey,
                 },
-            });
-            return response.json();
+            }).then((res) => res.json());
         });
     }
     createTable(tableName) {
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield fetch(`${this.client.getUrl()}/api/db/tables`, {
+            return fetch(`${this.client.url}/api/db/tables`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-API-Key": this.client.getApiKey(),
+                    "X-API-Key": this.client.apiKey,
                 },
                 body: JSON.stringify({
-                    projectId: this.client.getProjectId(),
+                    projectId: this.client.projectId,
                     tableName,
                 }),
-            });
-            return response.json();
+            }).then((res) => res.json());
         });
     }
     deleteTable(tableName) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield fetch(`${this.client.getUrl()}/api/db/tables/${tableName}?projectId=${this.client.getProjectId()}`, {
+            return fetch(`${this.client.url}/api/db/tables/${tableName}?projectId=${this.client.projectId}`, {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-API-Key": this.client.getApiKey(),
+                    "X-API-Key": this.client.apiKey,
                 },
-            });
+            }).then((res) => res.json());
         });
     }
-    // Column Operations
     addColumn(tableName, name, type) {
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield fetch(`${this.client.getUrl()}/api/db/tables/${tableName}/columns`, {
+            return fetch(`${this.client.url}/api/db/tables/${tableName}/columns`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-API-Key": this.client.getApiKey(),
+                    "X-API-Key": this.client.apiKey,
                 },
                 body: JSON.stringify({
-                    projectId: this.client.getProjectId(),
+                    projectId: this.client.projectId,
                     name,
                     type,
                 }),
-            });
-            return response.json();
+            }).then((res) => res.json());
         });
     }
-    // Document Operations
     getDocuments(tableName) {
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield fetch(`${this.client.getUrl()}/api/db/tables/${tableName}/documents?projectId=${this.client.getProjectId()}`, {
+            return fetch(`${this.client.url}/api/db/tables/${tableName}/documents?projectId=${this.client.projectId}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-API-Key": this.client.getApiKey(),
+                    "X-API-Key": this.client.apiKey,
                 },
-            });
-            return response.json();
+            }).then((res) => res.json());
         });
     }
     createDocument(tableName, document) {
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield fetch(`${this.client.getUrl()}/api/db/tables/${tableName}/documents`, {
+            return fetch(`${this.client.url}/api/db/tables/${tableName}/documents`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-API-Key": this.client.getApiKey(),
+                    "X-API-Key": this.client.apiKey,
                 },
                 body: JSON.stringify({
-                    projectId: this.client.getProjectId(),
+                    projectId: this.client.projectId,
                     document,
                 }),
-            });
-            return response.json();
+            }).then((res) => res.json());
         });
     }
-    updateDocument(tableName, id, document) {
+    getDocument(collection, id) {
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield fetch(`${this.client.getUrl()}/api/db/tables/${tableName}/documents/${id}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-API-Key": this.client.getApiKey(),
-                },
-                body: JSON.stringify({
-                    projectId: this.client.getProjectId(),
-                    document,
-                }),
-            });
-            return response.json();
-        });
-    }
-    deleteDocument(tableName, id) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield fetch(`${this.client.getUrl()}/api/db/tables/${tableName}/documents/${id}?projectId=${this.client.getProjectId()}`, {
-                method: "DELETE",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-API-Key": this.client.getApiKey(),
-                },
-            });
-        });
-    }
-    queryDocuments(tableName, query) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const response = yield fetch(`${this.client.getUrl()}/api/db/tables/${tableName}/query`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-API-Key": this.client.getApiKey(),
-                },
-                body: JSON.stringify({
-                    projectId: this.client.getProjectId(),
-                    query,
-                }),
-            });
-            return response.json();
+            return fetch(`${this.client.url}/database/${collection}/${id}`).then((res) => res.json());
         });
     }
 }
 exports.DatabaseClient = DatabaseClient;
-/**
- * Authentication Client
- * Handles user authentication and management
- */
+//
+//
+//
+// Auth Client
+//
+//
+//
+//
 class AuthClient {
     constructor(client) {
         if (!(client instanceof ZeroBaseClient))
             throw new Error("Invalid SDK Client");
         this.client = client;
     }
-    // User Management
     createUser(userData) {
         return __awaiter(this, void 0, void 0, function* () {
+            if (!userData || typeof userData !== "object") {
+                throw new Error("User data must be an object");
+            }
             if (!userData.email || !userData.password) {
                 throw new Error("Email and password are required");
             }
-            const response = yield fetch(`${this.client.getUrl()}/api/auth/signup`, {
+            return fetch(`${this.client.url}/api/auth/signup`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "x-api-key": this.client.getApiKey(),
+                    "x-api-key": this.client.apiKey,
                 },
-                body: JSON.stringify(Object.assign({ projectId: this.client.getProjectId() }, userData)),
+                body: JSON.stringify(Object.assign({ projectId: this.client.projectId }, userData)),
+            }).then((res) => {
+                if (!res.ok) {
+                    return res.json().then((err) => Promise.reject(err));
+                }
+                return res.json();
             });
-            if (!response.ok) {
-                const error = yield response.json();
-                throw new Error(error.message || "Failed to create user");
+        });
+    }
+    loginUser(email, password) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const response = yield fetch(`${this.client.url}/api/auth/login`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-API-Key": this.client.apiKey,
+                    },
+                    body: JSON.stringify({
+                        projectId: this.client.projectId,
+                        email,
+                        password,
+                    }),
+                });
+                if (!response.ok) {
+                    throw new Error(`Login failed: ${response.statusText}`);
+                }
+                const data = yield response.json();
+                return data;
             }
-            return response.json();
-        });
-    }
-    updateUser(userId, userData) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const response = yield fetch(`${this.client.getUrl()}/api/auth/users/${userId}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-API-Key": this.client.getApiKey(),
-                },
-                body: JSON.stringify(Object.assign({ projectId: this.client.getProjectId() }, userData)),
-            });
-            if (!response.ok) {
-                const error = yield response.json();
-                throw new Error(error.message || "Failed to update user");
+            catch (error) {
+                console.error("Login request failed:", error);
+                throw error;
             }
-            return response.json();
-        });
-    }
-    deleteUser(userId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield fetch(`${this.client.getUrl()}/api/auth/users/${userId}`, {
-                method: "DELETE",
-                headers: {
-                    "X-API-Key": this.client.getApiKey(),
-                },
-            });
-        });
-    }
-    // Authentication
-    login(email, password) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const response = yield fetch(`${this.client.getUrl()}/api/auth/login`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-API-Key": this.client.getApiKey(),
-                },
-                body: JSON.stringify({
-                    projectId: this.client.getProjectId(),
-                    email,
-                    password,
-                }),
-            });
-            return response.json();
         });
     }
     googleLogin(credential) {
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield fetch(`${this.client.getUrl()}/api/auth/google`, {
+            return fetch(`${this.client.url}/api/auth/google`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-API-Key": this.client.getApiKey(),
+                    "X-API-Key": this.client.apiKey,
                 },
                 body: JSON.stringify({
-                    projectId: this.client.getProjectId(),
+                    projectId: this.client.projectId,
                     credential,
                 }),
-            });
-            return response.json();
+            }).then((res) => res.json());
         });
     }
-    logout(token) {
+    //   async setupOTP() {
+    //     return fetch(`${this.client.url}/api/auth/otp/setup`, {
+    //       method: "POST",
+    //       headers: {
+    //         "Content-Type": "application/json",
+    //         Authorization: `Bearer ${jwtToken}`,
+    //         "X-API-Key": this.client.apiKey,
+    //       },
+    //       body: JSON.stringify({
+    //         projectId: this.client.projectId,
+    //       }),
+    //     }).then((res) => res.json());
+    //   }
+    getUsers() {
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield fetch(`${this.client.getUrl()}/api/auth/logout`, {
-                method: "POST",
+            return fetch(`${this.client.url}/api/auth/users?projectId=${this.client.projectId}`, {
+                method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-API-Key": this.client.getApiKey(),
-                    Authorization: `Bearer ${token}`,
+                    "X-API-Key": this.client.apiKey,
                 },
-            });
-            if (!response.ok) {
-                const error = yield response.json();
-                throw new Error(error.message || "Failed to logout");
-            }
+            }).then((res) => res.json());
         });
     }
-    // Password Management
-    resetPassword(email) {
+    deleteUser(userId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield fetch(`${this.client.getUrl()}/api/auth/reset-password`, {
-                method: "POST",
+            return fetch(`${this.client.url}/api/auth/users/${userId}?projectId=${this.client.projectId}`, {
+                method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-API-Key": this.client.getApiKey(),
+                    "X-API-Key": this.client.apiKey,
                 },
-                body: JSON.stringify({
-                    projectId: this.client.getProjectId(),
-                    email,
-                }),
-            });
-            if (!response.ok) {
-                const error = yield response.json();
-                throw new Error(error.message || "Failed to reset password");
-            }
-        });
-    }
-    changePassword(userId, oldPassword, newPassword) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const response = yield fetch(`${this.client.getUrl()}/api/auth/change-password`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-API-Key": this.client.getApiKey(),
-                },
-                body: JSON.stringify({
-                    projectId: this.client.getProjectId(),
-                    userId,
-                    oldPassword,
-                    newPassword,
-                }),
-            });
-            if (!response.ok) {
-                const error = yield response.json();
-                throw new Error(error.message || "Failed to change password");
-            }
+            }).then((res) => __awaiter(this, void 0, void 0, function* () {
+                if (!res.ok) {
+                    const error = yield res.json();
+                    throw new Error(error.message || "Failed to delete user");
+                }
+                return res.json();
+            }));
         });
     }
 }
 exports.AuthClient = AuthClient;
-/**
- * Storage Client
- * Handles file uploads and storage management
- */
+//
+//
+//
+// Storage Client
+//
+//
+//
+//
 class StorageClient {
     constructor(client) {
         if (!(client instanceof ZeroBaseClient))
@@ -335,43 +261,25 @@ class StorageClient {
         return __awaiter(this, void 0, void 0, function* () {
             const formData = new FormData();
             formData.append("file", file);
-            formData.append("projectId", this.client.getProjectId());
-            const response = yield fetch(`${this.client.getUrl()}/api/storage/upload`, {
+            formData.append("projectId", this.client.projectId);
+            return fetch(`${this.client.url}/api/storage/upload`, {
                 method: "POST",
                 headers: {
-                    "X-API-Key": this.client.getApiKey(),
+                    "X-API-Key": this.client.apiKey,
                 },
                 body: formData,
-            });
-            return response.json();
-        });
-    }
-    deleteFile(key) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield fetch(`${this.client.getUrl()}/api/storage/files/${key}`, {
-                method: "DELETE",
-                headers: {
-                    "X-API-Key": this.client.getApiKey(),
-                },
-            });
-        });
-    }
-    listFiles() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const response = yield fetch(`${this.client.getUrl()}/api/storage/files?projectId=${this.client.getProjectId()}`, {
-                headers: {
-                    "X-API-Key": this.client.getApiKey(),
-                },
-            });
-            return response.json();
+            }).then((res) => res.json());
         });
     }
 }
 exports.StorageClient = StorageClient;
-/**
- * Account Client
- * Handles user profile and session management
- */
+//
+//
+// Account Client
+//
+//
+//
+//
 class AccountClient {
     constructor(client) {
         if (!(client instanceof ZeroBaseClient))
@@ -380,65 +288,61 @@ class AccountClient {
     }
     getCurrentUser(token) {
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield fetch(`${this.client.getUrl()}/api/account/me`, {
+            if (!token) {
+                throw new Error("Authentication token is required");
+            }
+            return fetch(`${this.client.url}/api/account/me?projectId=${this.client.projectId}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-API-Key": this.client.getApiKey(),
+                    "X-API-Key": this.client.apiKey,
                     Authorization: `Bearer ${token}`,
                 },
-            });
-            if (!response.ok) {
-                const error = yield response.json();
-                throw new Error(error.message || "Failed to get current user");
-            }
-            return response.json();
-        });
-    }
-    updateProfile(token, userData) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const response = yield fetch(`${this.client.getUrl()}/api/account/me`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-API-Key": this.client.getApiKey(),
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(Object.assign({ projectId: this.client.getProjectId() }, userData)),
-            });
-            if (!response.ok) {
-                const error = yield response.json();
-                throw new Error(error.message || "Failed to update profile");
-            }
-            return response.json();
+            }).then((res) => __awaiter(this, void 0, void 0, function* () {
+                if (!res.ok) {
+                    const error = yield res.json();
+                    throw new Error(error.message || "Failed to get current user");
+                }
+                return res.json();
+            }));
         });
     }
     validateSession(token) {
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield fetch(`${this.client.getUrl()}/api/account/validate-session`, {
-                method: "POST",
+            if (!token) {
+                return { valid: false };
+            }
+            try {
+                const user = yield this.getCurrentUser(token);
+                return {
+                    valid: true,
+                    user,
+                };
+            }
+            catch (error) {
+                console.error("Session validation error:", error);
+                return {
+                    valid: false,
+                    error: error instanceof Error ? error.message : 'An unknown error occurred',
+                };
+            }
+        });
+    }
+    updateProfile(token, userData) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!token) {
+                throw new Error("Authentication token is required");
+            }
+            return fetch(`${this.client.url}/api/account/profile`, {
+                method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-API-Key": this.client.getApiKey(),
+                    "X-API-Key": this.client.apiKey,
                     Authorization: `Bearer ${token}`,
                 },
-            });
-            if (!response.ok) {
-                const error = yield response.json();
-                throw new Error(error.message || "Failed to validate session");
-            }
-            return response.json();
+                body: JSON.stringify(Object.assign({ projectId: this.client.projectId }, userData)),
+            }).then((res) => res.json());
         });
     }
 }
 exports.AccountClient = AccountClient;
-// Export error types
-class ZeroBaseError extends Error {
-    constructor(message, code, status) {
-        super(message);
-        this.code = code;
-        this.status = status;
-        this.name = 'ZeroBaseError';
-    }
-}
-exports.ZeroBaseError = ZeroBaseError;

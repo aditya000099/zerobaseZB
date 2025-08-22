@@ -15,7 +15,11 @@ const app = express();
 // Update CORS configuration
 app.use(
   cors({
-    origin: ["http://localhost:3002", "http://localhost:3000"], // Add all allowed origins
+    origin: [
+      "http://localhost:3002",
+      "http://localhost:3000",
+      "http://localhost:3001",
+    ], // Add all allowed origins
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: [
       "Content-Type",

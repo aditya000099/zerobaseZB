@@ -74,10 +74,11 @@ export default function DocsPage() {
         </div>
         <pre className="bg-black/50 rounded-lg p-4 overflow-x-auto">
           <code className="text-white/90 font-mono text-sm">
-            {`import { ZeroBaseClient, DatabaseClient, AuthClient } from '@zerobase/sdk';
+            {`import { ZeroBaseClient, DatabaseClient, AuthClient } from 'zerobase';
 
 const client = new ZeroBaseClient({
   projectId: 'your-project-id',
+  url: 'http://localhost:3000',
   apiKey: 'your-api-key'
 });
 
