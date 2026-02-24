@@ -10,6 +10,7 @@ export default function ProjectList() {
   const [projects, setProjects] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
+  const [storageMb, setStorageMb] = useState(1024);
 
   useEffect(() => {
     fetchProjects();
@@ -30,7 +31,7 @@ export default function ProjectList() {
       const response = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newProjectName }),
+        body: JSON.stringify({ name: newProjectName, storageMb: parseInt(storageMb, 10) }),
       });
 
       if (!response.ok) throw new Error("Failed to create project");
@@ -38,6 +39,7 @@ export default function ProjectList() {
       const newProject = await response.json();
       setProjects([newProject, ...projects]);
       setNewProjectName("");
+      setStorageMb(1024);
       setOpenDialog(false);
     } catch (err) {
       console.error("Error creating project:", err);
@@ -165,6 +167,32 @@ export default function ProjectList() {
           onChange={(e) => setNewProjectName(e.target.value)}
           placeholder="My Awesome Project"
         />
+        <div className="space-y-2">
+          <CustomInput
+            label="Storage Quota (MB)"
+            type="number"
+            value={storageMb}
+            onChange={(e) => setStorageMb(e.target.value)}
+            inputProps={{ min: 128 }}
+          />
+          <div className="flex flex-wrap gap-2">
+            {[512, 1024, 2048, 5120].map((mb) => (
+              <button
+                key={mb}
+                type="button"
+                onClick={() => setStorageMb(mb)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono border transition-all duration-150
+                  ${Number(storageMb) === mb
+                    ? "bg-zb-cyan/20 border-zb-cyan/50 text-zb-cyan"
+                    : "bg-black/20 border-white/10 text-white/50 hover:border-zb-cyan/30 hover:text-white/80"
+                  }`}
+              >
+                {mb >= 1024 ? `${mb / 1024} GB` : `${mb} MB`}
+              </button>
+            ))}
+          </div>
+          <p className="text-white/30 text-xs">Default: 1 GB. You can expand this later from the Storage tab.</p>
+        </div>
       </CustomDialog>
     </div>
   );

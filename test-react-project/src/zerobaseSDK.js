@@ -254,20 +254,59 @@ class StorageClient {
     this.client = client;
   }
 
+  async getInfo() {
+    return fetch(
+      `${this.client.url}/api/storage/${this.client.projectId}`,
+      { headers: { "X-API-Key": this.client.apiKey } }
+    ).then((res) => res.json());
+  }
+
+  async listFiles() {
+    return fetch(
+      `${this.client.url}/api/storage/${this.client.projectId}/files`,
+      { headers: { "X-API-Key": this.client.apiKey } }
+    ).then((res) => res.json());
+  }
+
   async uploadFile(file) {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("projectId", this.client.projectId);
+    return fetch(
+      `${this.client.url}/api/storage/${this.client.projectId}/files`,
+      {
+        method: "POST",
+        headers: { "X-API-Key": this.client.apiKey },
+        body: formData,
+      }
+    ).then((res) => res.json());
+  }
 
-    return fetch(`${this.client.url}/api/storage/upload`, {
-      method: "POST",
-      headers: {
-        "X-API-Key": this.client.apiKey,
-      },
-      body: formData,
-    }).then((res) => res.json());
+  getFileUrl(filename) {
+    return `${this.client.url}/api/storage/${this.client.projectId}/files/${encodeURIComponent(filename)}`;
+  }
+
+  async deleteFile(filename) {
+    return fetch(
+      `${this.client.url}/api/storage/${this.client.projectId}/files/${encodeURIComponent(filename)}`,
+      {
+        method: "DELETE",
+        headers: { "X-API-Key": this.client.apiKey },
+      }
+    ).then((res) => res.json());
+  }
+
+  async updateQuota(newQuotaMb) {
+    return fetch(
+      `${this.client.url}/api/storage/${this.client.projectId}/quota`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "X-API-Key": this.client.apiKey },
+        body: JSON.stringify({ newQuotaMb }),
+      }
+    ).then((res) => res.json());
   }
 }
+
 
 //
 //

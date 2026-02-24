@@ -19,8 +19,38 @@ import LogsTab from "./components/LogsTab";
 import OverviewTab from "./components/OverviewTab";
 import DocsPage from "./components/DocsPage";
 import DocContent from "./components/DocContent";
+import SettingsTab from "./components/SettingsTab";
+
+// ── Server health hook ─────────────────────────────────────────────────────
+function useServerStatus() {
+  const [status, setStatus] = React.useState("checking"); // 'ok' | 'degraded' | 'down' | 'checking'
+  React.useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const res = await fetch("/api/health", { signal: AbortSignal.timeout(4000) });
+        const data = await res.json();
+        if (!cancelled) setStatus(data.status === "ok" ? "ok" : "degraded");
+      } catch {
+        if (!cancelled) setStatus("down");
+      }
+    };
+    check();
+    const id = setInterval(check, 15000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, []);
+  return status;
+}
 
 function App() {
+  const serverStatus = useServerStatus();
+  const statusConfig = {
+    ok: { dot: "bg-emerald-400", glow: "shadow-[0_0_6px_rgba(52,211,153,0.8)]", label: "Online" },
+    degraded: { dot: "bg-amber-400", glow: "shadow-[0_0_6px_rgba(251,191,36,0.8)]", label: "Degraded" },
+    down: { dot: "bg-red-500", glow: "shadow-[0_0_6px_rgba(239,68,68,0.8)]", label: "Offline" },
+    checking: { dot: "bg-white/30", glow: "", label: "Checking" },
+  }[serverStatus];
+
   return (
     <Router>
       <div className="min-h-screen font-outfit bg-gradient-to-b from-black via-zb-gray-dark to-black">
@@ -43,25 +73,24 @@ function App() {
                 <span className="text-zb-cyan-light">Zero</span>
                 <span className="text-white/90">Base</span>
               </Link>
-              <nav className="space-x-8 font-outfit">
+              <nav className="flex items-center space-x-8 font-outfit">
                 <Link
                   to="/"
                   className="text-white/80 hover:text-zb-cyan transition duration-200"
                 >
                   Projects
                 </Link>
-                {/* <Link
-                  to="/about"
-                  className="text-white/80 hover:text-zb-cyan transition duration-200"
-                >
-                  About
-                </Link> */}
                 <Link
                   to="/docs"
                   className="text-white/80 hover:text-zb-cyan transition duration-200"
                 >
                   Docs
                 </Link>
+                {/* Server status pill */}
+                <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${statusConfig.dot} ${statusConfig.glow}`} />
+                  <span className="text-xs text-white/60 font-outfit">{statusConfig.label}</span>
+                </div>
               </nav>
             </div>
           </header>
@@ -78,6 +107,7 @@ function App() {
                   <Route path="auth" element={<AuthTab />} />
                   <Route path="storage" element={<StorageTab />} />
                   <Route path="logs" element={<LogsTab />} />
+                  <Route path="settings" element={<SettingsTab />} />
                 </Route>
                 <Route
                   path="/projects/:projectId/auth/new"

@@ -4,7 +4,8 @@ import {
   Database,
   Users,
   HardDrives,
-  TextAlignLeft, // Changed from ScrollText to TextAlignLeft for logs
+  TextAlignLeft,
+  GearSix,
 } from "@phosphor-icons/react";
 
 const NavItem = ({ icon, label, isActive, onClick }) => (
@@ -13,10 +14,9 @@ const NavItem = ({ icon, label, isActive, onClick }) => (
     className={`
       w-full flex items-center gap-3 p-3 rounded-2xl transition-all duration-200
       font-outfit text-base
-      ${
-        isActive
-          ? "bg-gradient-to-r from-zb-cyan/20 to-zinc-800/50 border border-zb-cyan/20 text-white shadow-[0_4px_10px_rgba(20,252,241,0.1)]"
-          : "text-white/70 hover:bg-zinc-800/30 hover:text-white"
+      ${isActive
+        ? "bg-gradient-to-r from-zb-cyan/20 to-zinc-800/50 border border-zb-cyan/20 text-white shadow-[0_4px_10px_rgba(20,252,241,0.1)]"
+        : "text-white/70 hover:bg-zinc-800/30 hover:text-white"
       }
     `}
   >
@@ -48,9 +48,14 @@ const SidebarNav = ({ activeView, onViewChange, projectName }) => {
       view: "storage",
     },
     {
-      icon: <TextAlignLeft size={24} weight="fill" />, // Changed icon here
+      icon: <TextAlignLeft size={24} weight="fill" />,
       label: "Logs",
       view: "logs",
+    },
+    {
+      icon: <GearSix size={24} weight="fill" />,
+      label: "Settings",
+      view: "settings",
     },
   ];
 
