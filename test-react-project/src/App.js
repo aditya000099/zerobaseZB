@@ -35,7 +35,8 @@ function useServerHealth(baseUrl) {
 // ── SDK setup ─────────────────────────────────────────────────────────────────
 const PROJECT_ID = "project_1771954096581";
 const BASE_URL = "http://localhost:3000";
-const API_KEY = "f5bd00fe-cb7d-44ad-af37-507d0c0fc23d";
+// const API_KEY = "f5bd00fe-cb7d-44ad-af37-507d0c0fc23d";
+const API_KEY = "api-key-removed";
 
 const zbClient = new ZeroBaseClient(PROJECT_ID, BASE_URL, API_KEY);
 const auth = new AuthClient(zbClient);
@@ -280,7 +281,7 @@ export default function App() {
       ]);
       setStorageInfo(info);
       setFiles(list.files || []);
-    } catch {}
+    } catch { }
   };
   const handleUpload = async (fileList) => {
     const valid = Array.from(fileList).filter((f) => ACCEPTED.includes(f.type));
@@ -463,10 +464,9 @@ export default function App() {
                       key={t.table_name}
                       onClick={() => setActiveTable(t.table_name)}
                       className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all
-                        ${
-                          activeTable === t.table_name
-                            ? "bg-indigo-600/20 text-indigo-300 ring-1 ring-indigo-600/40"
-                            : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                        ${activeTable === t.table_name
+                          ? "bg-indigo-600/20 text-indigo-300 ring-1 ring-indigo-600/40"
+                          : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                         }`}
                     >
                       {t.table_name}
