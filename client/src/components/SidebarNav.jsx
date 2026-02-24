@@ -2,6 +2,7 @@ import React from "react";
 import {
   ChartPie,
   Database,
+  Cube,
   Users,
   HardDrives,
   TextAlignLeft,
@@ -36,6 +37,11 @@ const SidebarNav = ({ activeView, onViewChange, projectName }) => {
       icon: <Database size={24} weight="fill" />,
       label: "Database",
       view: "database",
+    },
+    {
+      icon: <Cube size={24} weight="fill" />,
+      label: "Extensions",
+      view: "extensions",
     },
     {
       icon: <Users size={24} weight="fill" />,
