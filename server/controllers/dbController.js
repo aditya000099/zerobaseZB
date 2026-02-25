@@ -1,6 +1,7 @@
 const { Client } = require("pg");
 const { getProjectDBUrl } = require("../config/db");
 const { logRequest } = require("../utils/logger");
+const { broadcast } = require("../realtime");
 
 // Full Postgres type set (safe subset for user-facing schema management)
 const VALID_PG_TYPES = new Set([
@@ -72,6 +73,7 @@ const createTable = async (req, res) => {
         await client.connect();
         await client.query(`CREATE TABLE "${tableName}" (id SERIAL PRIMARY KEY)`);
         await logRequest(projectId, "/api/db/tables", "POST", 200, `Table ${tableName} created`);
+        broadcast(projectId, "__schema__", "CREATE_TABLE", { tableName });
         res.json({ success: true });
     } catch (error) {
         await logRequest(projectId, "/api/db/tables", "POST", 500, error.message, { tableName });
@@ -88,6 +90,7 @@ const deleteTable = async (req, res) => {
     try {
         await client.connect();
         await client.query(`DROP TABLE IF EXISTS "${tableName}" CASCADE`);
+        broadcast(projectId, "__schema__", "DROP_TABLE", { tableName });
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -147,6 +150,7 @@ const createDocument = async (req, res) => {
         const placeholders = values.map((_, idx) => `$${idx + 1}`);
         const query = `INSERT INTO "${tableName}" (${columns.map(c => `"${c}"`).join(", ")}) VALUES (${placeholders.join(", ")}) RETURNING *`;
         const result = await client.query(query, values);
+        broadcast(projectId, tableName, "INSERT", result.rows[0]);
         res.json(result.rows[0]);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -172,6 +176,7 @@ const updateDocument = async (req, res) => {
         const query = `UPDATE auth_users SET ${setClause} WHERE id = $${values.length} RETURNING *`;
         const result = await client.query(query, values);
         if (result.rows.length === 0) return res.status(404).json({ error: "User not found" });
+        broadcast(projectId, "auth_users", "UPDATE", result.rows[0]);
         await logRequest(projectId, `/api/db/tables/auth_users/documents/${userId}`, "PUT", 200, "User updated");
         res.json(result.rows[0]);
     } catch (error) {

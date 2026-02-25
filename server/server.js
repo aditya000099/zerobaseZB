@@ -11,6 +11,7 @@ const projectRoutes = require("./routes/projects");
 const storageRoutes = require("./routes/storage");
 const { authenticate } = require("./middleware/authenticate");
 const { getCurrentUser } = require("./controllers/authController");
+const { initRealtime, getProjectStats } = require("./realtime");
 
 const app = express();
 
@@ -111,6 +112,11 @@ const startServer = async () => {
   app.use("/api/storage", storageRoutes(mainClient));
   app.get("/api/account/me", authenticate, getCurrentUser);
 
+  // ── Realtime stats (dashboard) ──────────────────────────────────────────
+  app.get("/api/realtime/stats", (req, res) => {
+    res.json(getProjectStats());
+  });
+
   // Serve React dashboard
   const staticPath = path.join(__dirname, "client/build");
   app.use(express.static(staticPath));
@@ -119,15 +125,18 @@ const startServer = async () => {
   });
 
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
+  const httpServer = app.listen(PORT, () => {
     console.log(`
     Zerobase Running!
     =================
-    Dashboard: http://localhost:${PORT}
-    API Docs:  http://localhost:${PORT}/api
+    Dashboard:  http://localhost:${PORT}
+    WebSocket:  ws://localhost:${PORT}/ws
     PostgreSQL: postgres://admin:${process.env.POSTGRES_PASSWORD}@localhost:5432
     `);
   });
+
+  // Attach WebSocket server to the HTTP server
+  initRealtime(httpServer, mainClient);
 };
 
 startServer();

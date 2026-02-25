@@ -1,6 +1,6 @@
 {
   "name": "zerobase",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Backend as a Service SDK for ZeroBase platform",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",

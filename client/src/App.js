@@ -21,6 +21,7 @@ import DocsPage from "./components/DocsPage";
 import DocContent from "./components/DocContent";
 import SettingsTab from "./components/SettingsTab";
 import ExtensionsTab from "./components/ExtensionsTab";
+import RealtimeTab from "./components/RealtimeTab";
 
 // ── Server health hook ─────────────────────────────────────────────────────
 function useServerStatus() {
@@ -109,6 +110,7 @@ function App() {
                   <Route path="storage" element={<StorageTab />} />
                   <Route path="logs" element={<LogsTab />} />
                   <Route path="extensions" element={<ExtensionsTab />} />
+                  <Route path="realtime" element={<RealtimeTab />} />
                   <Route path="settings" element={<SettingsTab />} />
                 </Route>
                 <Route

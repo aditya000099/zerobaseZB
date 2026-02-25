@@ -4,6 +4,7 @@ import {
   AuthClient,
   DatabaseClient,
   StorageClient,
+  RealtimeClient,
 } from "./zerobaseSDK";
 // import {
 //   ZeroBaseClient,
@@ -41,13 +42,14 @@ function useServerHealth(baseUrl) {
 // ── SDK setup ─────────────────────────────────────────────────────────────────
 const PROJECT_ID = "project_1771954096581";
 const BASE_URL = "http://localhost:3000";
-// const API_KEY = "f5bd00fe-cb7d-44ad-af37-507d0c0fc23d";
-const API_KEY = "api-key-removed";
+const API_KEY = "f5bd00fe-cb7d-44ad-af37-507d0c0fc23d";
+// const API_KEY = "api-key-removed";
 
 const zbClient = new ZeroBaseClient(PROJECT_ID, BASE_URL, API_KEY);
 const auth = new AuthClient(zbClient);
 const db = new DatabaseClient(zbClient);
 const storage = new StorageClient(zbClient);
+const rt = new RealtimeClient(zbClient);
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 function formatBytes(bytes) {
@@ -287,7 +289,7 @@ export default function App() {
       ]);
       setStorageInfo(info);
       setFiles(list.files || []);
-    } catch {}
+    } catch { }
   };
   const handleUpload = async (fileList) => {
     const valid = Array.from(fileList).filter((f) => ACCEPTED.includes(f.type));
@@ -314,6 +316,35 @@ export default function App() {
   const storagePct = storageInfo
     ? Math.min((storageInfo.usedMb / (storageInfo.quotaMb || 1)) * 100, 100)
     : 0;
+
+  // ── Realtime ──
+  const [rtConnected, setRtConnected] = useState(false);
+  const [rtEvents, setRtEvents] = useState([]);
+
+  const toggleRealtime = async () => {
+    if (rtConnected) {
+      rt.disconnect();
+      setRtConnected(false);
+      notify("⚡ Realtime disconnected");
+      return;
+    }
+    try {
+      await rt.connect();
+      setRtConnected(true);
+      notify("⚡ Realtime connected!");
+      // subscribe to loaded tables + schema changes
+      tables.forEach((t) =>
+        rt.subscribe(t.table_name, (event, data) =>
+          setRtEvents((prev) => [{ event, table: t.table_name, data, _ts: new Date().toLocaleTimeString() }, ...prev].slice(0, 30))
+        )
+      );
+      rt.subscribe("__schema__", (event, data) =>
+        setRtEvents((prev) => [{ event, table: "__schema__", data, _ts: new Date().toLocaleTimeString() }, ...prev].slice(0, 30))
+      );
+    } catch {
+      notify("❌ Realtime connection failed");
+    }
+  };
 
   // ── Init ──
   useEffect(() => {
@@ -470,10 +501,9 @@ export default function App() {
                       key={t.table_name}
                       onClick={() => setActiveTable(t.table_name)}
                       className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all
-                        ${
-                          activeTable === t.table_name
-                            ? "bg-indigo-600/20 text-indigo-300 ring-1 ring-indigo-600/40"
-                            : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                        ${activeTable === t.table_name
+                          ? "bg-indigo-600/20 text-indigo-300 ring-1 ring-indigo-600/40"
+                          : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                         }`}
                     >
                       {t.table_name}
@@ -708,6 +738,56 @@ export default function App() {
             )}
             {files.length === 0 && !uploading && (
               <p className="text-sm text-zinc-600">No files uploaded yet.</p>
+            )}
+          </div>
+        </Section>
+
+        {/* ── Realtime ─────────────────────────────────────────────── */}
+        <Section
+          title="⚡ Realtime"
+          subtitle="WebSocket live connection"
+          badge={<Badge color={rtConnected ? "green" : "zinc"}>{rtConnected ? "Connected" : "Off"}</Badge>}
+        >
+          <div className="space-y-4">
+            {/* Toggle */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggleRealtime}
+                className={`relative w-12 h-6 rounded-full transition-colors ${rtConnected ? "bg-emerald-600" : "bg-zinc-700"
+                  }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${rtConnected ? "translate-x-6" : ""
+                    }`}
+                />
+              </button>
+              <span className="text-sm text-zinc-300">
+                {rtConnected ? "Listening for changes…" : "Click to connect"}
+              </span>
+            </div>
+
+            {/* Event log */}
+            {rtEvents.length > 0 && (
+              <div className="rounded-xl border border-zinc-800 bg-zinc-950 overflow-hidden">
+                <div className="px-3 py-2 border-b border-zinc-800 flex items-center justify-between">
+                  <span className="text-xs text-zinc-500 font-medium">Live Events</span>
+                  <button onClick={() => setRtEvents([])} className="text-xs text-zinc-600 hover:text-zinc-400">
+                    Clear
+                  </button>
+                </div>
+                <div className="max-h-48 overflow-y-auto divide-y divide-zinc-900">
+                  {rtEvents.map((ev, i) => (
+                    <div key={i} className="px-3 py-2 flex items-start gap-2 text-xs">
+                      <span className="text-zinc-600 shrink-0">{ev._ts}</span>
+                      <Badge color={ev.event === "INSERT" ? "green" : ev.event === "UPDATE" ? "blue" : "amber"}>
+                        {ev.event}
+                      </Badge>
+                      <span className="text-zinc-400 font-mono">{ev.table}</span>
+                      <span className="text-zinc-600 truncate">{JSON.stringify(ev.data).slice(0, 80)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         </Section>

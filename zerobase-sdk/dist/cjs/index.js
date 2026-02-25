@@ -4,7 +4,7 @@
  * Backend-as-a-Service SDK for the ZeroBase platform.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AccountClient = exports.StorageClient = exports.AuthClient = exports.DatabaseClient = exports.ZeroBaseClient = void 0;
+exports.RealtimeClient = exports.AccountClient = exports.StorageClient = exports.AuthClient = exports.DatabaseClient = exports.ZeroBaseClient = void 0;
 // ── SDK Client ──────────────────────────────────────────────────────────────
 class ZeroBaseClient {
     constructor(projectId, url, apiKey) {
@@ -297,3 +297,74 @@ class AccountClient {
     }
 }
 exports.AccountClient = AccountClient;
+class RealtimeClient {
+    constructor(client) {
+        this.ws = null;
+        this.subs = new Map();
+        this.shouldReconnect = false;
+        this.retryMs = 1000;
+        if (!(client instanceof ZeroBaseClient))
+            throw new Error("Invalid SDK Client");
+        this.client = client;
+    }
+    connect() {
+        return new Promise((resolve, reject) => {
+            const base = this.client.url.replace(/^http/, "ws");
+            const url = `${base}/ws?projectId=${encodeURIComponent(this.client.projectId)}&apiKey=${encodeURIComponent(this.client.apiKey)}`;
+            this.ws = new WebSocket(url);
+            this.shouldReconnect = true;
+            this.ws.onopen = () => {
+                this.retryMs = 1000;
+            };
+            this.ws.onmessage = (e) => {
+                try {
+                    const msg = JSON.parse(typeof e.data === "string" ? e.data : "");
+                    if (msg.type === "connected") {
+                        resolve();
+                        return;
+                    }
+                    if (msg.type === "change") {
+                        const cb = this.subs.get(msg.table);
+                        if (cb)
+                            cb(msg.event, msg.data);
+                    }
+                }
+                catch ( /* ignore */_a) { /* ignore */ }
+            };
+            this.ws.onclose = () => {
+                if (this.shouldReconnect) {
+                    setTimeout(() => this.connect().then(() => {
+                        var _a;
+                        // re-subscribe on reconnect
+                        for (const table of this.subs.keys()) {
+                            (_a = this.ws) === null || _a === void 0 ? void 0 : _a.send(JSON.stringify({ type: "subscribe", table }));
+                        }
+                    }).catch(() => { }), this.retryMs);
+                    this.retryMs = Math.min(this.retryMs * 2, 30000);
+                }
+            };
+            this.ws.onerror = () => {
+                reject(new Error("WebSocket connection failed"));
+            };
+        });
+    }
+    subscribe(table, callback) {
+        this.subs.set(table, callback);
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({ type: "subscribe", table }));
+        }
+    }
+    unsubscribe(table) {
+        this.subs.delete(table);
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({ type: "unsubscribe", table }));
+        }
+    }
+    disconnect() {
+        var _a;
+        this.shouldReconnect = false;
+        (_a = this.ws) === null || _a === void 0 ? void 0 : _a.close();
+        this.ws = null;
+    }
+}
+exports.RealtimeClient = RealtimeClient;

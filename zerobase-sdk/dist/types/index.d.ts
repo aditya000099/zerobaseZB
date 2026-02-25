@@ -56,3 +56,17 @@ export declare class AccountClient {
     validateSession(token: string): Promise<SessionResponse>;
     updateProfile(token: string, userData: Partial<UserData>): Promise<any>;
 }
+type ChangeCallback = (event: string, data: any) => void;
+export declare class RealtimeClient {
+    private client;
+    private ws;
+    private subs;
+    private shouldReconnect;
+    private retryMs;
+    constructor(client: ZeroBaseClient);
+    connect(): Promise<void>;
+    subscribe(table: string, callback: ChangeCallback): void;
+    unsubscribe(table: string): void;
+    disconnect(): void;
+}
+export {};

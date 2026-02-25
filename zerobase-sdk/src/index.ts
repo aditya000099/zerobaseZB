@@ -386,3 +386,81 @@ export class AccountClient {
     }).then((res) => res.json());
   }
 }
+
+// ── Realtime Client ─────────────────────────────────────────────────────────
+
+type ChangeCallback = (event: string, data: any) => void;
+
+export class RealtimeClient {
+  private client: ZeroBaseClient;
+  private ws: WebSocket | null = null;
+  private subs: Map<string, ChangeCallback> = new Map();
+  private shouldReconnect = false;
+  private retryMs = 1000;
+
+  constructor(client: ZeroBaseClient) {
+    if (!(client instanceof ZeroBaseClient))
+      throw new Error("Invalid SDK Client");
+    this.client = client;
+  }
+
+  connect(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const base = this.client.url.replace(/^http/, "ws");
+      const url = `${base}/ws?projectId=${encodeURIComponent(this.client.projectId)}&apiKey=${encodeURIComponent(this.client.apiKey)}`;
+      this.ws = new WebSocket(url);
+      this.shouldReconnect = true;
+
+      this.ws.onopen = () => {
+        this.retryMs = 1000;
+      };
+
+      this.ws.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(typeof e.data === "string" ? e.data : "");
+          if (msg.type === "connected") { resolve(); return; }
+          if (msg.type === "change") {
+            const cb = this.subs.get(msg.table);
+            if (cb) cb(msg.event, msg.data);
+          }
+        } catch { /* ignore */ }
+      };
+
+      this.ws.onclose = () => {
+        if (this.shouldReconnect) {
+          setTimeout(() => this.connect().then(() => {
+            // re-subscribe on reconnect
+            for (const table of this.subs.keys()) {
+              this.ws?.send(JSON.stringify({ type: "subscribe", table }));
+            }
+          }).catch(() => { }), this.retryMs);
+          this.retryMs = Math.min(this.retryMs * 2, 30000);
+        }
+      };
+
+      this.ws.onerror = () => {
+        reject(new Error("WebSocket connection failed"));
+      };
+    });
+  }
+
+  subscribe(table: string, callback: ChangeCallback): void {
+    this.subs.set(table, callback);
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: "subscribe", table }));
+    }
+  }
+
+  unsubscribe(table: string): void {
+    this.subs.delete(table);
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: "unsubscribe", table }));
+    }
+  }
+
+  disconnect(): void {
+    this.shouldReconnect = false;
+    this.ws?.close();
+    this.ws = null;
+  }
+}

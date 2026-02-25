@@ -394,7 +394,66 @@ class AccountClient {
 // const client = new ZeroBaseClient("myProjectId", "https://api.zerobase.com");
 // const db = new DatabaseClient(client);
 // const auth = new AuthClient(client);
-// const storage = new StorageClient(client);
+// Realtime Client
+class RealtimeClient {
+  constructor(client) {
+    if (!(client instanceof ZeroBaseClient)) throw new Error("Invalid SDK Client");
+    this.client = client;
+    this.ws = null;
+    this.subs = new Map();
+    this.reconnectDelay = 1000;
+  }
+
+  connect() {
+    return new Promise((resolve, reject) => {
+      const base = this.client.url.replace(/^http/, "ws");
+      const url = `${base}/ws?projectId=${encodeURIComponent(this.client.projectId)}&apiKey=${encodeURIComponent(this.client.apiKey)}`;
+      this.ws = new WebSocket(url);
+      this.ws.onopen = () => {
+        this.reconnectDelay = 1000;
+        for (const table of this.subs.keys()) {
+          this.ws.send(JSON.stringify({ type: "subscribe", table }));
+        }
+      };
+      this.ws.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(typeof e.data === "string" ? e.data : "");
+          if (msg.type === "connected") { resolve(); return; }
+          if (msg.type === "change") {
+            const cb = this.subs.get(msg.table);
+            if (cb) cb(msg.event, msg.data);
+          }
+        } catch { }
+      };
+      this.ws.onerror = () => reject(new Error("WebSocket connection failed"));
+      this.ws.onclose = (ev) => {
+        if (ev.code !== 1000 && this.reconnectDelay < 30000) {
+          setTimeout(() => this.connect().catch(() => { }), this.reconnectDelay);
+          this.reconnectDelay = Math.min(this.reconnectDelay * 2, 30000);
+        }
+      };
+    });
+  }
+
+  subscribe(table, callback) {
+    this.subs.set(table, callback);
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: "subscribe", table }));
+    }
+  }
+
+  unsubscribe(table) {
+    this.subs.delete(table);
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: "unsubscribe", table }));
+    }
+  }
+
+  disconnect() {
+    this.subs.clear();
+    if (this.ws) { this.ws.close(1000); this.ws = null; }
+  }
+}
 
 export {
   ZeroBaseClient,
@@ -402,4 +461,5 @@ export {
   AuthClient,
   StorageClient,
   AccountClient,
+  RealtimeClient,
 };

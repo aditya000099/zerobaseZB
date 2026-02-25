@@ -5,6 +5,7 @@ import {
   Cube,
   Users,
   HardDrives,
+  Lightning,
   TextAlignLeft,
   GearSix,
 } from "@phosphor-icons/react";
@@ -52,6 +53,11 @@ const SidebarNav = ({ activeView, onViewChange, projectName }) => {
       icon: <HardDrives size={24} weight="fill" />,
       label: "Storage",
       view: "storage",
+    },
+    {
+      icon: <Lightning size={24} weight="fill" />,
+      label: "Realtime",
+      view: "realtime",
     },
     {
       icon: <TextAlignLeft size={24} weight="fill" />,
